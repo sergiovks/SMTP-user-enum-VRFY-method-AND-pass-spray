@@ -3,6 +3,16 @@ import socket
 import sys
 import os
 
+def banners():
+    print("""
+    *********************************************
+        SMTP Enum Tool VRFY method + PassSpray
+        Author: sergiovks
+    *********************************************
+    """)
+
+banners
+
 # Define the arguments accepted by the script
 parser = argparse.ArgumentParser(description='Enumerate users on an SMTP server')
 parser.add_argument('-ip', required=True, help='SMTP server IP address')
