@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(description='Enumerate users on an SMTP server'
 parser.add_argument('-ip', required=True, help='SMTP server IP address')
 parser.add_argument('-w', required=True, help='File containing a list of usernames')
 parser.add_argument('-p', help='Password to authenticate to the SMTP server (optional)')
+parser.add_argument('-t', type=int, default=5, help='Timeout for socket operations in seconds (default: 5)')
 
 args = parser.parse_args()
 
@@ -26,16 +27,21 @@ if not os.access(args.w, os.R_OK):
     print('Could not read wordlist file:', args.w)
     sys.exit(1)
 
-# Create a socket and connect to the SMTP server
+# Create a socket and connect to the SMTP server with timeout
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(args.t)
 try:
     s.connect((args.ip, 25))
 except socket.error as e:
     print('Could not connect to SMTP server:', e)
     sys.exit(1)
 
-# Receive the banner from the SMTP server
-banner = s.recv(1024)
+# Receive the banner from the SMTP server with timeout
+try:
+    banner = s.recv(1024)
+except socket.timeout:
+    print('Timed out receiving banner from SMTP server')
+    sys.exit(1)
 print(banner.decode())
 
 # VRFY each user in the wordlist
@@ -44,17 +50,29 @@ with open(args.w, 'r') as f:
         username = line.strip()
         # Send the VRFY command with the username
         s.send(('VRFY ' + username + '\r\n').encode())
-        result = s.recv(1024).decode()
+        try:
+            result = s.recv(1024).decode()
+        except socket.timeout:
+            print('Timed out receiving result for user:', username)
+            continue
         if result.startswith('250'):
             print('User found:', username)
 
 # If a password was provided, try to authenticate to the SMTP server
 if args.p:
     s.send(('AUTH LOGIN\r\n').encode())
-    result = s.recv(1024).decode()
+    try:
+        result = s.recv(1024).decode()
+    except socket.timeout:
+        print('Timed out receiving result for AUTH LOGIN')
+        sys.exit(1)
     if result.startswith('334'):
         s.send((args.p + '\r\n').encode())
-        result = s.recv(1024).decode()
+        try:
+            result = s.recv(1024).decode()
+        except socket.timeout:
+            print('Timed out receiving result for AUTH password')
+            sys.exit(1)
         if result.startswith('235'):
             print('Authentication successful')
         else:
