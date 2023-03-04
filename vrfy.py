@@ -9,7 +9,7 @@ def banners():
     *********************************************
     """)
 
-print(banners)
+banners()
 
 if len(sys.argv) == 2 and sys.argv[1] == '-h':
     print("Usage: vrfy.py -ip SMTP_IP -w WORDLIST_FILE")
