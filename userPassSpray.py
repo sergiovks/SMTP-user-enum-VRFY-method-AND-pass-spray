@@ -11,7 +11,7 @@ def banners():
     *********************************************
     """)
 
-banners
+banners()
 
 # Define the arguments accepted by the script
 parser = argparse.ArgumentParser(description='Enumerate users on an SMTP server')
